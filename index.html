@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Portfolio Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#F0F2F5;--surface:#FFFFFF;--surface2:#F7F8FA;--border:#E2E5EA;--border2:#D0D4DC;
+  --text:#0D1117;--text2:#4B5563;--text3:#9CA3AF;
+  --green:#059669;--green-bg:#ECFDF5;--green-b:#A7F3D0;
+  --red:#DC2626;--red-bg:#FEF2F2;--red-b:#FECACA;
+  --blue:#1D4ED8;--blue-bg:#EFF6FF;--blue-b:#BFDBFE;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;--purple-b:#DDD6FE;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh}
+.mono{font-family:'IBM Plex Mono',monospace}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* BUTTONS */
+.btn{border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-weight:500;border-radius:7px;font-size:12px;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn:hover{filter:brightness(.95)}
+.btn-dark{background:var(--text);color:#fff;padding:7px 14px}
+.btn-outline{background:var(--surface);border:1px solid var(--border2);color:var(--text2);padding:7px 12px}
+.btn-outline:hover{border-color:var(--text2)}
+.btn-green{background:var(--green);color:#fff;padding:8px 16px;font-size:13px}
+.btn-ghost{background:transparent;color:var(--text3);padding:6px 10px;font-size:12px}
+.btn-ghost:hover{color:var(--text2);background:var(--surface2)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b);padding:4px 10px;font-size:11px}
+
+/* INPUTS */
+.input{background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px;padding:8px 12px;width:100%;outline:none;transition:border .15s}
+.input:focus{border-color:var(--text);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.select{appearance:none;background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px;padding:8px 12px;width:100%;outline:none;cursor:pointer}
+.select:focus{border-color:var(--text)}
+.label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+
+/* LAYOUT */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:30px;height:30px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.logo-text{font-weight:600;font-size:15px;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;letter-spacing:.5px}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:flex-end}
+.ntab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.ntab.active{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.ntab:hover:not(.active){color:var(--text2)}
+.viewonly{margin-left:auto;font-size:11px;color:var(--text3);padding-bottom:4px;display:flex;align-items:center;gap:4px}
+main{padding:20px 24px;max-width:1280px;margin:0 auto}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.cards-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.cards-grid{grid-template-columns:repeat(3,1fr);gap:10px}}
+@media(max-width:600px){.cards-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .stat-card{padding:12px}
+  .stat-value{font-size:16px!important}
+  .stat-sub{font-size:10px!important}
+  .stat-label{font-size:9px!important}
+}
+.stat-card{padding:16px}
+.stat-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+.stat-value{font-size:21px;font-weight:600;letter-spacing:-.5px;font-family:'IBM Plex Mono',monospace}
+.stat-sub{font-size:11px;margin-top:3px;font-family:'IBM Plex Mono',monospace;color:var(--text3)}
+.card-accent-green{border-left:3px solid var(--green)}
+.card-accent-purple{border-left:3px solid var(--purple)}
+.card-accent-blue{border-left:3px solid var(--blue)}
+
+/* ALLOC */
+.alloc-card{padding:18px 20px}
+.alloc-row{display:grid;grid-template-columns:70px 1fr 42px 100px;align-items:center;gap:10px;margin-bottom:9px}
+.alloc-row:last-child{margin-bottom:0}
+.alloc-sym{font-weight:600;font-size:13px}
+.alloc-bar-wrap{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+.alloc-bar{height:100%;border-radius:3px;transition:width .8s ease}
+
+/* BROKER TABS */
+.broker-tabs{display:flex;gap:6px;margin-bottom:14px}
+.btab{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:5px}
+.btab.active{background:var(--text);color:#fff;border-color:var(--text)}
+.bdot{display:inline-block;width:7px;height:7px;border-radius:50%}
+
+/* CASH ROW */
+.cash-row{background:var(--blue-bg);border:1px solid var(--blue-b);border-radius:10px;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.cash-label{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.6px}
+.cash-val{font-size:18px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--blue)}
+.cash-pct{font-size:11px;color:var(--blue);font-family:'IBM Plex Mono',monospace;background:#DBEAFE;padding:2px 8px;border-radius:99px}
+.cash-btn{font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:inherit}
+
+/* TICKER TABLE */
+.ticker-table{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:var(--shadow)}
+.t-row{min-width:620px}
+.t-row{display:grid;grid-template-columns:150px 140px 130px 150px 100px 110px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:6px;transition:background .1s}
+.t-row:last-child{border-bottom:none}
+.t-row:hover:not(.t-hdr):not(.t-total){background:var(--surface2)}
+.t-hdr{background:var(--surface2);border-bottom:2px solid var(--border2)!important;padding:8px 16px}
+.t-total{background:var(--surface2);border-top:2px solid var(--border2)!important}
+.t-hdr-col{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.sym-main{font-weight:600;font-size:13px;letter-spacing:-.2px}
+.sym-name{font-size:11px;color:var(--text3);white-space:normal;word-break:break-word;line-height:1.3}
+.col2{font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:500}
+.col2-sub{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+.pnl{font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right}
+.pnl-sub{font-size:11px;font-family:'IBM Plex Mono',monospace;text-align:right}
+.val-main{font-size:13px;font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right}
+.g{color:var(--green)}.r{color:var(--red)}.p{color:var(--purple)}.b{color:var(--blue)}.muted{color:var(--text3)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:26px;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-md)}
+.modal-wide{max-width:740px}
+.modal-title{font-weight:600;font-size:17px;margin-bottom:20px;letter-spacing:-.3px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-total{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px}
+.modal-footer{display:flex;gap:10px;margin-top:18px}
+
+/* DROPZONE */
+.dropzone{border:2px dashed var(--border2);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s}
+.dropzone:hover,.dropzone.drag{border-color:var(--text);background:var(--surface2)}
+
+/* PREVIEW TABLE */
+.prev-ok{background:var(--green-bg)}.prev-err{background:var(--red-bg)}
+.prev-ok:hover{background:#D1FAE5}.prev-err:hover{background:#FEE2E2}
+.cb{width:15px;height:15px;accent-color:var(--text);cursor:pointer}
+.pill-up{background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.pill-dn{background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.pill-dep{background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.section-hdr{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .25s ease}
+@media(max-width:900px){.t-row{grid-template-columns:140px 120px 120px 130px 0 110px}.hide-md{display:none}}
+@media(max-width:600px){.hide-sm{display:none}.nav-label{display:none}.viewonly{font-size:10px}}
+@media(max-width:480px){.cards-grid{grid-template-columns:1fr 1fr;gap:6px}.stat-card{padding:10px 12px}.stat-value{font-size:14px!important}}
+@media(max-width:700px){
+  .ticker-table{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .ticker-table-inner{min-width:540px}
+  .t-row{grid-template-columns:130px 110px 105px 105px 0 85px;padding:8px 10px;min-width:540px}
+  .hide-md{display:none}
+  .pnl{font-size:11px}
+  .pnl-sub{font-size:10px}
+  .val-main{font-size:12px}
+  .cash-row{flex-direction:column;align-items:flex-start;gap:8px}
+  .broker-tabs{flex-wrap:wrap;gap:5px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef,useMemo}=React;
+
+// ╔══════════════════════════════════════════════════════╗
+// ║  CONFIGURARE — schimbă valorile de mai jos           ║
+// ╚══════════════════════════════════════════════════════╝
+const ADMIN_PIN = "1980"; // ← SCHIMBĂ PIN-UL!
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6Fj-qie_hWvBf1PhSqeWXrjBFUAFRbcn8xo_9VbFe9T8gp9T-woDbPiAPdtOudb9r/exec"; // ← URL-ul de la Deploy
+// ══════════════════════════════════════════════════════
+
+const USE_CLOUD = SCRIPT_URL !== "PUNE_URL_APPS_SCRIPT_AICI";
+const SK = "ptf_v5_local"; // localStorage fallback key
+
+// ── Google Sheets API helpers ─────────────────────────────
+async function sheetGet(){
+  const r=await fetch(SCRIPT_URL);
+  const j=await r.json();
+  if(!j.ok)throw new Error(j.error);
+  return j.data.map(row=>({
+    ...row,
+    id: Number(row.id)||row.id,
+    shares: Number(row.shares),
+    price: Number(row.price),
+  }));
+}
+async function sheetAdd(tx){
+  await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"add",tx})});
+}
+async function sheetAddBulk(txs){
+  await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"addBulk",txs})});
+}
+async function sheetDelete(id){
+  await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"delete",id})});
+}
+async function sheetDeleteSymbol(symbol,broker){
+  await fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"deleteSymbol",symbol,broker})});
+}
+
+// ── helpers ──────────────────────────────────────────────────
+// ── Prices via Google Finance (Apps Script) ──────────────
+// Falls back to Yahoo proxy if Apps Script not configured
+async function fetchAllPricesGoogleFinance(symbols){
+  if(!USE_CLOUD||!symbols.length)return null;
+  try{
+    const url=SCRIPT_URL+"?action=getPrices&symbols="+encodeURIComponent(symbols.join(","));
+    const r=await Promise.race([fetch(url),new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),12000))]);
+    const j=await r.json();
+    if(j.ok&&j.prices)return j.prices;
+  }catch{}
+  return null;
+}
+
+// Fallback: Yahoo via allorigins proxy
+async function fetchPriceYahoo(sym){
+  try{
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`;
+    const r=await Promise.race([
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),8000))
+    ]);
+    const j=await r.json();
+    const m=JSON.parse(j.contents)?.chart?.result?.[0]?.meta;
+    if(!m?.regularMarketPrice)return null;
+    return{price:m.regularMarketPrice,prev:m.previousClose,currency:m.currency||"USD",name:m.shortName||sym};
+  }catch{return null;}
+}
+
+const fmtC=(n,cur="USD")=>{
+  if(n==null||isNaN(n))return"—";
+  try{return new Intl.NumberFormat("ro-RO",{style:"currency",currency:cur,minimumFractionDigits:2,maximumFractionDigits:2}).format(n);}
+  catch{return`${n.toFixed(2)} ${cur}`;}
+};
+const fmtN=(n,d=2)=>n==null||isNaN(n)?"—":(n>=0?"+":"")+n.toFixed(d);
+const fmtPct=(n)=>n==null||isNaN(n)?"—":(n>=0?"+":"")+n.toFixed(2)+"%";
+const cls=(n)=>n==null||isNaN(n)?"muted":n>=0?"g":"r";
+
+function excelDate(v){
+  if(!v)return"";
+  if(typeof v==="string"&&/\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);
+  if(typeof v==="string"){const m=v.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})$/);if(m)return`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;}
+  if(typeof v==="number"){const d=new Date(Math.round((v-25569)*86400*1000));return d.toISOString().split("T")[0];}
+  if(v instanceof Date)return v.toISOString().split("T")[0];
+  return String(v).slice(0,10);
+}
+
+function parseImport(file,cb){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:"binary"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+      let hi=0;
+      for(let i=0;i<Math.min(rows.length,10);i++){
+        const r=rows[i].map(c=>String(c).toLowerCase());
+        if(r.some(c=>c.includes("symbol")||c.includes("simbol")||c.includes("ticker"))){hi=i;break;}
+      }
+      const hdrs=rows[hi].map(c=>String(c).toLowerCase().trim());
+      const ci=keys=>{for(const k of keys){const i=hdrs.findIndex(h=>h.includes(k));if(i>=0)return i;}return -1;};
+      const iS=ci(["symbol","simbol","ticker"]),iD=ci(["data","date"]),iQ=ci(["ac\u021b","shares","qty","nr."]),iP=ci(["pre\u021b","price","pret"]),iT=ci(["tip","type"]),iB=ci(["broker","portofol"]),iN=ci(["note","not\u0103","obs","comentariu"]);
+      const out=[];
+      for(let i=hi+1;i<rows.length;i++){
+        const row=rows[i];if(!row||row.every(c=>!c))continue;
+        const sym=iS>=0?String(row[iS]).trim().toUpperCase():"";
+        const date=excelDate(iD>=0?row[iD]:"");
+        const shares=parseFloat(String(iQ>=0?row[iQ]:"").replace(",","."));
+        const price=parseFloat(String(iP>=0?row[iP]:"").replace(",","."));
+        const tr=iT>=0?String(row[iT]).trim().toUpperCase():"BUY";
+        const type=tr.includes("SELL")||tr.includes("VANZ")?"SELL":tr.includes("DEP")||tr.includes("DEPUN")?"DEPOSIT":"BUY";
+        const broker=iB>=0?String(row[iB]).trim().toUpperCase():"XTB";
+        const brokerClean=broker.includes("IBKR")||broker.includes("IB")||broker.includes("INTER")?"IBKR":"XTB";
+        const notes=iN>=0?String(row[iN]).trim():"";
+        const errors=[];
+        if(type!=="DEPOSIT"){if(!sym)errors.push("Symbol lipsă");if(isNaN(shares)||shares<=0)errors.push("Acțiuni invalid");if(isNaN(price)||price<=0)errors.push("Preț invalid");}
+        if(!date)errors.push("Dată lipsă");
+        out.push({sym,date,shares:isNaN(shares)?0:shares,price:isNaN(price)?0:price,type,broker:brokerClean,notes,errors,selected:errors.length===0});
+      }
+      cb({ok:true,rows:out});
+    }catch(err){cb({ok:false,error:err.message});}
+  };
+  reader.readAsBinaryString(file);
+}
+
+function dlTemplate(){
+  const wb=XLSX.utils.book_new();
+  const d=[
+    ["Symbol *","Data *","Nr. Acțiuni *","Preț / Acțiune *","Tip *","Broker *","Note"],
+    ["ex: AAPL","YYYY-MM-DD","ex: 10","ex: 185.40","BUY / SELL / DEPOSIT","XTB sau IBKR","opțional"],
+    ["","","","","","",""],
+    ["","2024-01-15","","5000","DEPOSIT","XTB","Depunere inițială"],
+    ["AAPL","2024-03-15",10,172.50,"BUY","XTB","Prima cumpărare"],
+    ["TLV.RO","2024-04-01",100,21.80,"BUY","XTB",""],
+    ["","2024-05-01","","3000","DEPOSIT","IBKR","Depunere IBKR"],
+    ["VOO","2024-05-10",2,445.00,"BUY","IBKR","ETF"],
+    ["AAPL","2024-09-20",5,220.00,"SELL","XTB","Profit parțial"],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(d);
+  ws["!cols"]=[{wch:12},{wch:13},{wch:14},{wch:16},{wch:12},{wch:10},{wch:24}];
+  XLSX.utils.book_append_sheet(wb,ws,"Tranzactii");
+  XLSX.writeFile(wb,"portfolio_template.xlsx");
+}
+
+// ── portfolio calculations ────────────────────────────────────
+function calcPortfolio(txs,priceMap){
+  // group by broker+symbol
+  const byBrokerSym={};
+  txs.forEach(t=>{
+    const key=`${t.broker}__${t.symbol}`;
+    if(!byBrokerSym[key])byBrokerSym[key]={broker:t.broker,symbol:t.symbol,txs:[]};
+    byBrokerSym[key].txs.push(t);
+  });
+
+  // cash per broker: starts 0, +DEPOSIT, -BUY*shares*price, +SELL*shares*price
+  const cashByBroker={XTB:0,IBKR:0};
+  txs.forEach(t=>{
+    if(t.type==="DEPOSIT")cashByBroker[t.broker]+=t.price; // price field = deposit amount
+    else if(t.type==="BUY")cashByBroker[t.broker]-=(+t.shares)*(+t.price);
+    else if(t.type==="SELL")cashByBroker[t.broker]+=(+t.shares)*(+t.price);
+  });
+
+  const positions=Object.values(byBrokerSym).map(({broker,symbol,txs:rows})=>{
+    // avg cost method
+    let shares=0,costBasis=0,realizedPnl=0;
+    rows.filter(r=>r.type!=="DEPOSIT").sort((a,b)=>a.date.localeCompare(b.date)).forEach(r=>{
+      if(r.type==="BUY"){
+        costBasis+=+r.shares*(+r.price);
+        shares+=+r.shares;
+      } else if(r.type==="SELL"){
+        const avgCost=shares>0?costBasis/shares:0;
+        realizedPnl+=(+r.price - avgCost)*(+r.shares);
+        costBasis-=avgCost*(+r.shares);
+        shares-=+r.shares;
+      }
+    });
+    if(shares<0.0001&&shares>-0.0001)shares=0;
+    const avgPrice=shares>0?costBasis/shares:0;
+    const pd=priceMap[symbol];
+    const curPrice=pd?.price||null;
+    const currency=pd?.currency||"USD";
+    const name=pd?.name||symbol;
+    const curValue=curPrice!=null?curPrice*shares:null;
+    const unrealizedPnl=curPrice!=null?(curPrice-avgPrice)*shares:null;
+    const unrealizedPct=costBasis>0&&unrealizedPnl!=null?(unrealizedPnl/costBasis)*100:null;
+    const realizedPct=costBasis>0?(realizedPnl/costBasis)*100:null;
+    const dayChange=curPrice&&pd?.prev?((curPrice-pd.prev)/pd.prev)*100:null;
+    return{broker,symbol,name,shares,avgPrice,curPrice,currency,curValue,costBasis,unrealizedPnl,unrealizedPct,realizedPnl,realizedPct,dayChange,txCount:rows.filter(r=>r.type!=="DEPOSIT").length};
+  }).filter(p=>p.shares>0.0001);
+
+  return{positions,cashByBroker};
+}
+
+// ════════════════════════════════════════════════════════════
+// ── HistoryChart: SP500 vs Portfolio SVG line chart ──────
+function HistoryChart({spHistory,txs,prices}){
+  const W=500,H=160,PL=40,PR=10,PT=10,PB=24;
+  const cW=W-PL-PR, cH=H-PT-PB;
+
+  // Build portfolio daily value from txs
+  const pfPoints=useMemo(()=>{
+    if(!spHistory.data.length||!txs.length)return[];
+    const dates=spHistory.data.map(p=>p.date);
+    return dates.map(date=>{
+      const dayTxs=txs.filter(t=>t.type!=="DEPOSIT"&&new Date(t.date)<=date);
+      const positions={};
+      dayTxs.forEach(t=>{
+        if(!positions[t.symbol])positions[t.symbol]={shares:0,cost:0};
+        if(t.type==="BUY"){positions[t.symbol].shares+=t.shares;positions[t.symbol].cost+=t.shares*t.price;}
+        else if(t.type==="SELL"){positions[t.symbol].shares-=t.shares;}
+      });
+      const val=Object.entries(positions).reduce((s,[sym,p])=>{
+        const px=prices[sym]?.price||0;
+        return s+p.shares*px;
+      },0);
+      return{date,val};
+    });
+  },[spHistory.data,txs,prices]);
+
+  if(!spHistory.data.length)return(
+    <div style={{height:H,display:"flex",alignItems:"center",justifyContent:"center",color:"var(--text3)",fontSize:12}}>
+      {spHistory.loading?"Se încarcă date istorice...": "Date indisponibile"}
+    </div>
+  );
+
+  // Normalize both to % change from first point
+  const spFirst=spHistory.data[0]?.close||1;
+  const pfFirst=pfPoints[0]?.val||1;
+  const spPts=spHistory.data.map((p,i)=>({x:i,y:(p.close-spFirst)/spFirst*100}));
+  const pfPts=pfPoints.map((p,i)=>({x:i,y:pfFirst>0?(p.val-pfFirst)/pfFirst*100:0}));
+
+  const allY=[...spPts.map(p=>p.y),...pfPts.map(p=>p.y)];
+  const minY=Math.min(...allY,-2),maxY=Math.max(...allY,2);
+  const rangeY=maxY-minY||1;
+  const n=spPts.length;
+
+  const toSVG=(pts)=>pts.map((p,i)=>{
+    const x=PL+i/(n-1)*cW;
+    const y=PT+cH-(p.y-minY)/rangeY*cH;
+    return`${i===0?"M":"L"}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  const zeroY=PT+cH-(-minY)/rangeY*cH;
+
+  // x labels - show ~4 dates
+  const labelIdxs=[0,Math.floor(n/3),Math.floor(2*n/3),n-1];
+  const fmtDate=d=>d.toLocaleDateString("ro-RO",{day:"numeric",month:"short"});
+
+  const spLast=spPts[spPts.length-1]?.y||0;
+  const pfLast=pfPts[pfPts.length-1]?.y||0;
+
+  return(
+    <div>
+      <div style={{display:"flex",gap:16,marginBottom:6}}>
+        <span className="mono" style={{fontSize:11,color:spLast>=0?"var(--green)":"var(--red)",fontWeight:600}}>S&P {spLast>=0?"+":""}{spLast.toFixed(2)}%</span>
+        <span className="mono" style={{fontSize:11,color:pfLast>=0?"#1D4ED8":"var(--red)",fontWeight:600}}>PTF {pfLast>=0?"+":""}{pfLast.toFixed(2)}%</span>
+        <span style={{fontSize:10,color:"var(--text3)"}}>últimele 3 luni</span>
+      </div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
+        {/* zero line */}
+        <line x1={PL} y1={zeroY} x2={W-PR} y2={zeroY} stroke="var(--border2)" strokeDasharray="4 3" strokeWidth={1}/>
+        {/* grid lines */}
+        {[-5,0,5,10].map(v=>{
+          const y=PT+cH-(v-minY)/rangeY*cH;
+          if(y<PT||y>PT+cH)return null;
+          return <g key={v}>
+            <line x1={PL} y1={y} x2={W-PR} y2={y} stroke="var(--border)" strokeWidth={.5}/>
+            <text x={PL-4} y={y+3} textAnchor="end" fontSize={8} fill="var(--text3)">{v>0?"+":""}{v}%</text>
+          </g>;
+        })}
+        {/* SP500 line */}
+        <path d={toSVG(spPts)} fill="none" stroke="#059669" strokeWidth={1.5} strokeLinejoin="round"/>
+        {/* Portfolio line */}
+        <path d={toSVG(pfPts)} fill="none" stroke="#1D4ED8" strokeWidth={1.5} strokeLinejoin="round" strokeDasharray="5 2"/>
+        {/* x labels */}
+        {labelIdxs.map(i=>{
+          const x=PL+i/(n-1)*cW;
+          return <text key={i} x={x} y={H-2} textAnchor="middle" fontSize={8} fill="var(--text3)">{fmtDate(spHistory.data[i].date)}</text>;
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function App(){
+  const[txs,setTxs]=useState([]);
+  const[prices,setPrices]=useState({});
+  const[loadingSyms,setLoadingSyms]=useState({});
+  const[isAdmin,setIsAdmin]=useState(false);
+  const[pin,setPin]=useState("");const[pinErr,setPinErr]=useState(false);
+  const[tab,setTab]=useState("dashboard");
+  const[brokerTab,setBrokerTab]=useState(null); // null = use first broker
+  const[updated,setUpdated]=useState(null);
+  // dynamic brokers
+  const BROKERS_SK="ptf_brokers_v1";
+  const[brokers,setBrokers]=useState(["XTB","IBKR"]);
+  const[showBrokerMgr,setShowBrokerMgr]=useState(false);
+  const[newBrokerName,setNewBrokerName]=useState("");
+  useEffect(()=>{try{const s=localStorage.getItem(BROKERS_SK);if(s)setBrokers(JSON.parse(s));}catch{}},[]);
+  useEffect(()=>{try{localStorage.setItem(BROKERS_SK,JSON.stringify(brokers));}catch{}},[brokers]);
+  const activeBroker=brokerTab||brokers[0]||"XTB";
+  const addBroker=()=>{const n=newBrokerName.trim().toUpperCase();if(!n||brokers.includes(n))return;setBrokers(b=>[...b,n]);setNewBrokerName("");};
+  const delBroker=b=>{if(confirm(`Stergi brokerul ${b}? Tranzactiile raman.`)){setBrokers(p=>p.filter(x=>x!==b));if(activeBroker===b)setBrokerTab(null);}};
+  // market data
+  const[marketData,setMarketData]=useState({});
+  const[fearGreed,setFearGreed]=useState(null);
+  const[usdRon,setUsdRon]=useState(null);
+  // edit tx
+  const[editTx,setEditTx]=useState(null);
+  // modals
+  const[showPin,setShowPin]=useState(false);
+  const[showAdd,setShowAdd]=useState(false);
+  const[showImport,setShowImport]=useState(false);
+  const[showCashEdit,setShowCashEdit]=useState(null); // broker string
+  const[importRows,setImportRows]=useState(null);
+  const[importErr,setImportErr]=useState("");
+  const[drag,setDrag]=useState(false);
+  const fileRef=useRef();
+  // form
+  const today=new Date().toISOString().split("T")[0];
+  const[form,setForm]=useState({type:"BUY",symbol:"",shares:"",price:"",date:today,broker:"XTB",notes:""});
+  const[formErr,setFormErr]=useState("");
+  // cash edit
+  const[cashEditVal,setCashEditVal]=useState("");
+
+  // ── CLUB state ────────────────────────────────────────────
+  const CLUB_SK="ptf_club_v1";
+  const[club,setClub]=useState({
+    name:"Investment Club",
+    totalValue:0,
+    investors:[],       // {id,name,color}
+    contributions:[]    // {id,investorId,month,amount}
+  });
+  const[showClubInvestor,setShowClubInvestor]=useState(false);
+  const[showClubContrib,setShowClubContrib]=useState(false);
+  const[editInvestor,setEditInvestor]=useState(null); // null=new, obj=edit
+  const[editContrib,setEditContrib]=useState(null);
+  const[clubTotalVal,setClubTotalVal]=useState("");
+  const[invForm,setInvForm]=useState({name:"",color:"#1D4ED8"});
+  const[contribForm,setContribForm]=useState({investorId:"",month:new Date().toISOString().slice(0,7),amount:""});
+  const[invErr,setInvErr]=useState("");
+
+  useEffect(()=>{
+    // Load club from cloud if available, else localStorage
+    if(USE_CLOUD){
+      fetch(SCRIPT_URL+"?action=getClub")
+        .then(r=>r.json())
+        .then(j=>{if(j.ok&&j.club)setClub(j.club);else{try{const s=localStorage.getItem(CLUB_SK);if(s)setClub(JSON.parse(s));}catch{}}})
+        .catch(()=>{try{const s=localStorage.getItem(CLUB_SK);if(s)setClub(JSON.parse(s));}catch{}});
+    } else {
+      try{const s=localStorage.getItem(CLUB_SK);if(s)setClub(JSON.parse(s));}catch{}
+    }
+  },[]);
+  useEffect(()=>{
+    try{localStorage.setItem(CLUB_SK,JSON.stringify(club));}catch{}
+    if(USE_CLOUD){
+      fetch(SCRIPT_URL,{method:"POST",body:JSON.stringify({action:"saveClub",club})}).catch(()=>{});
+    }
+  },[club]);
+
+  // club computed
+  const clubInvestorStats=useMemo(()=>{
+    const total=club.investors.reduce((s,inv)=>{
+      const contribs=club.contributions.filter(c=>c.investorId===inv.id);
+      return s+contribs.reduce((ss,c)=>ss+c.amount,0);
+    },0);
+    // Use manual value if set, else auto (totalPortfolio * usdRon)
+    const dispVal=club.totalValue>0?club.totalValue:(usdRon?totalPortfolio*usdRon:0);
+    return club.investors.map(inv=>{
+      const contribs=club.contributions.filter(c=>c.investorId===inv.id);
+      const invested=contribs.reduce((s,c)=>s+c.amount,0);
+      const stake=total>0?(invested/total)*100:0;
+      const curVal=dispVal>0?(stake/100)*dispVal:invested;
+      const profit=curVal-invested;
+      const roi=invested>0?(profit/invested)*100:0;
+      return{...inv,invested,stake,curVal,profit,roi,contribs};
+    }).sort((a,b)=>b.invested-a.invested);
+  },[club,usdRon,totalPortfolio]);
+
+  const clubTotalInvested=clubInvestorStats.reduce((s,i)=>s+i.invested,0);
+
+  // Club auto value: total portfolio (positions + cash) converted USD→RON
+  const clubAutoValueRON=useMemo(()=>{
+    if(!usdRon||usdRon<=0)return null;
+    return totalPortfolio*usdRon;
+  },[totalPortfolio,usdRon]);
+
+  // Use auto value if club.totalValue is 0, else use manual
+  const clubDisplayValue=club.totalValue>0?club.totalValue:(clubAutoValueRON||0);
+
+  // club months list
+  const clubMonths=useMemo(()=>{
+    const ms=new Set(club.contributions.map(c=>c.month));
+    return [...ms].sort().reverse();
+  },[club.contributions]);
+
+  const addInvestor=()=>{
+    if(!invForm.name.trim()){setInvErr("Numele e obligatoriu.");return;}
+    const inv={id:Date.now(),name:invForm.name.trim(),color:invForm.color};
+    if(editInvestor){
+      setClub(c=>({...c,investors:c.investors.map(i=>i.id===editInvestor.id?{...i,...inv,id:i.id}:i)}));
+    } else {
+      setClub(c=>({...c,investors:[...c.investors,inv]}));
+    }
+    setInvForm({name:"",color:"#1D4ED8"});setInvErr("");setEditInvestor(null);setShowClubInvestor(false);
+  };
+  const delInvestor=id=>{
+    if(confirm("Ștergi investitorul și toate contribuțiile lui?"))
+      setClub(c=>({...c,investors:c.investors.filter(i=>i.id!==id),contributions:c.contributions.filter(c=>c.investorId!==id)}));
+  };
+  const addContrib=()=>{
+    if(!contribForm.investorId||!contribForm.amount||isNaN(+contribForm.amount)||+contribForm.amount<=0)return;
+    const contrib={id:Date.now(),investorId:+contribForm.investorId,month:contribForm.month,amount:+contribForm.amount};
+    if(editContrib){
+      setClub(c=>({...c,contributions:c.contributions.map(x=>x.id===editContrib.id?{...contrib,id:x.id}:x)}));
+    } else {
+      setClub(c=>({...c,contributions:[...c.contributions,contrib]}));
+    }
+    setContribForm(f=>({...f,amount:""}));setEditContrib(null);setShowClubContrib(false);
+  };
+  const delContrib=id=>{if(confirm("Ștergi contribuția?"))setClub(c=>({...c,contributions:c.contributions.filter(x=>x.id!==id)}));};
+  const saveClubValue=()=>{
+    const v=parseFloat(clubTotalVal);
+    if(!isNaN(v)&&v>=0)setClub(c=>({...c,totalValue:v}));
+    setClubTotalVal("");
+  };
+
+  const CLUB_COLORS=["#1D4ED8","#059669","#D97706","#7C3AED","#DC2626","#0891B2","#EA580C","#0F766E","#9333EA","#BE185D"];
+
+  // persist — cloud or localStorage
+  const[cloudLoading,setCloudLoading]=useState(false);
+  const[cloudErr,setCloudErr]=useState("");
+  useEffect(()=>{
+    if(USE_CLOUD){
+      setCloudLoading(true);
+      sheetGet().then(data=>{setTxs(data);setCloudLoading(false);})
+        .catch(e=>{setCloudErr("Eroare cloud: "+e.message);setCloudLoading(false);
+          try{const s=localStorage.getItem(SK);if(s)setTxs(JSON.parse(s));}catch{}
+        });
+    } else {
+      try{const s=localStorage.getItem(SK);if(s)setTxs(JSON.parse(s));}catch{}
+    }
+  },[]);
+  useEffect(()=>{try{localStorage.setItem(SK,JSON.stringify(txs));}catch{}},[txs]);
+
+  const symbols=useMemo(()=>[...new Set(txs.filter(t=>t.type!=="DEPOSIT").map(t=>t.symbol))],[txs]);
+
+  const fetchAll=useCallback(async()=>{
+    if(!symbols.length)return;
+    setLoadingSyms(Object.fromEntries(symbols.map(s=>[s,true])));
+
+    // Try Google Finance first (single request for all symbols, fast)
+    const gfPrices=await fetchAllPricesGoogleFinance(symbols);
+    if(gfPrices&&Object.keys(gfPrices).length>0){
+      setPrices(prev=>({...prev,...gfPrices}));
+      setLoadingSyms({});
+      setUpdated(new Date());
+      return;
+    }
+
+    // Fallback: Yahoo proxy in batches of 6
+    const BATCH=6;
+    for(let i=0;i<symbols.length;i+=BATCH){
+      const batch=symbols.slice(i,i+BATCH);
+      const res=await Promise.all(batch.map(async s=>[s,await fetchPriceYahoo(s)]));
+      setPrices(prev=>({...prev,...Object.fromEntries(res.filter(([,d])=>d).map(([s,d])=>[s,d]))}));
+      setLoadingSyms(prev=>{const n={...prev};batch.forEach(s=>delete n[s]);return n;});
+    }
+    setUpdated(new Date());
+  },[symbols.join(",")]);
+
+  // Run fetchAll when symbols change (after txs load from cloud)
+  useEffect(()=>{if(symbols.length)fetchAll();},[symbols.join(",")]);
+  // Independent 60s interval — always uses latest fetchAll via ref
+  const fetchAllRef=useRef(fetchAll);
+  useEffect(()=>{fetchAllRef.current=fetchAll;},[fetchAll]);
+  useEffect(()=>{
+    const id=setInterval(()=>fetchAllRef.current(),60000);
+    return()=>clearInterval(id);
+  },[]);
+
+  // ── SP500 history state ──────────────────────────────────
+  const[spHistory,setSpHistory]=useState({data:[],loading:false});
+  useEffect(()=>{
+    setSpHistory(h=>({...h,loading:true}));
+    const url="https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=3mo";
+    fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
+      .then(r=>r.json())
+      .then(j=>{
+        const res=JSON.parse(j.contents)?.chart?.result?.[0];
+        if(!res)return;
+        const ts=res.timestamps||[];
+        const closes=res.indicators?.quote?.[0]?.close||[];
+        const pts=ts.map((t,i)=>({date:new Date(t*1000),close:closes[i]})).filter(p=>p.close);
+        setSpHistory({data:pts,loading:false});
+      })
+      .catch(()=>setSpHistory({data:[],loading:false}));
+  },[]);
+
+  // ── Market indices + Fear&Greed + USD/RON ─────────────────
+  const MARKET_SYMS=["^GSPC","^DJI","^IXIC","^VIX","GC=F","CL=F","BTC-USD","EURUSD=X"];
+  const MARKET_LABELS={"^GSPC":"S&P 500","^DJI":"Dow Jones","^IXIC":"Nasdaq","^VIX":"VIX","GC=F":"Gold","CL=F":"Oil","BTC-USD":"Bitcoin","EURUSD=X":"EUR/USD"};
+
+  const fetchMarket=useCallback(async()=>{
+    // Fetch market indices via allorigins
+    const fetchOne=async sym=>{
+      try{
+        const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`;
+        const r=await Promise.race([fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`),new Promise((_,rj)=>setTimeout(()=>rj(),8000))]);
+        const j=await r.json();
+        const m=JSON.parse(j.contents)?.chart?.result?.[0]?.meta;
+        if(!m?.regularMarketPrice)return null;
+        return{price:m.regularMarketPrice,prev:m.previousClose,currency:m.currency||"USD"};
+      }catch{return null;}
+    };
+    const res=await Promise.all(MARKET_SYMS.map(async s=>[s,await fetchOne(s)]));
+    setMarketData(Object.fromEntries(res.filter(([,d])=>d).map(([s,d])=>[s,d])));
+    // USD/RON from Yahoo
+    try{
+      const url="https://query1.finance.yahoo.com/v8/finance/chart/RON=X?interval=1d&range=1d";
+      const r=await Promise.race([fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`),new Promise((_,rj)=>setTimeout(()=>rj(),6000))]);
+      const j=await r.json();
+      const m=JSON.parse(j.contents)?.chart?.result?.[0]?.meta;
+      if(m?.regularMarketPrice)setUsdRon(m.regularMarketPrice);
+    }catch{}
+    // Fear & Greed
+    try{
+      const r=await Promise.race([fetch("https://api.alternative.me/fng/"),new Promise((_,rj)=>setTimeout(()=>rj(),5000))]);
+      const j=await r.json();
+      if(j?.data?.[0])setFearGreed({value:+j.data[0].value,label:j.data[0].value_classification});
+    }catch{}
+  },[]);
+
+  useEffect(()=>{fetchMarket();const id=setInterval(fetchMarket,300000);return()=>clearInterval(id);},[fetchMarket]);
+
+  const{positions,cashByBroker}=useMemo(()=>calcPortfolio(txs,prices),[txs,prices]);
+
+  // filtered by broker tab
+  const filteredPos=useMemo(()=>{
+    const arr=activeBroker==="TOTAL"?positions:positions.filter(p=>p.broker===activeBroker);
+    return [...arr].sort((a,b)=>(b.curValue||0)-(a.curValue||0));
+  },[positions,activeBroker]);
+
+  const cashTotal=cashByBroker.XTB+cashByBroker.IBKR;
+  const displayCash=brokerTab==="TOTAL"?cashTotal:brokerTab==="XTB"?cashByBroker.XTB:cashByBroker.IBKR;
+
+  // aggregates
+  function aggr(pos){
+    const totalCurValue=pos.reduce((s,p)=>s+(p.curValue||0),0);
+    const totalCostBasis=pos.reduce((s,p)=>s+p.costBasis,0);
+    const totalUnrealized=pos.reduce((s,p)=>s+(p.unrealizedPnl||0),0);
+    const totalRealized=pos.reduce((s,p)=>s+p.realizedPnl,0);
+    const uPct=totalCostBasis>0?(totalUnrealized/totalCostBasis)*100:0;
+    const rPct=totalCostBasis>0?(totalRealized/totalCostBasis)*100:0;
+    return{totalCurValue,totalCostBasis,totalUnrealized,totalRealized,uPct,rPct};
+  }
+  const{totalCurValue,totalCostBasis,totalUnrealized,totalRealized,uPct,rPct}=aggr(positions);
+  const totalPortfolio=totalCurValue+cashTotal;
+  const cashPct=totalPortfolio>0?(cashTotal/totalPortfolio)*100:0;
+
+  // admin
+  const doPin=()=>{if(pin===ADMIN_PIN){setIsAdmin(true);setShowPin(false);setPin("");setPinErr(false);}else{setPinErr(true);setPin("");}};
+
+  // add / edit tx
+  const addTx=()=>{
+    let tx;
+    if(form.type==="DEPOSIT"){
+      if(!form.price||isNaN(+form.price)||+form.price<=0){setFormErr("Introdu suma depusă.");return;}
+      tx={id:editTx?editTx.id:Date.now(),type:"DEPOSIT",symbol:"",shares:0,price:+form.price,date:form.date,broker:form.broker,notes:form.notes};
+    } else {
+      if(!form.symbol||!form.shares||!form.price){setFormErr("Completează symbol, acțiuni și preț.");return;}
+      tx={id:editTx?editTx.id:Date.now(),type:form.type,symbol:form.symbol.toUpperCase().trim(),shares:+form.shares,price:+form.price,date:form.date,broker:form.broker,notes:form.notes};
+    }
+    if(editTx){
+      setTxs(prev=>prev.map(t=>t.id===editTx.id?tx:t));
+      if(USE_CLOUD){sheetDelete(editTx.id).then(()=>sheetAdd(tx)).catch(e=>setCloudErr("Eroare editare: "+e.message));}
+    } else {
+      setTxs(prev=>[...prev,tx]);
+      if(USE_CLOUD)sheetAdd(tx).catch(e=>setCloudErr("Eroare salvare: "+e.message));
+    }
+    setForm({type:"BUY",symbol:"",shares:"",price:"",date:today,broker:brokers[0]||"XTB",notes:""});
+    setFormErr("");setShowAdd(false);setEditTx(null);
+  };
+  const openEditTx=tx=>{
+    setEditTx(tx);
+    setForm({type:tx.type,symbol:tx.symbol,shares:tx.type==="DEPOSIT"?"":String(tx.shares),price:String(tx.price),date:tx.date,broker:tx.broker,notes:tx.notes||""});
+    setShowAdd(true);
+  };
+
+  const delTx=id=>{
+    if(confirm("Ștergi tranzacția?")){
+      setTxs(p=>p.filter(t=>t.id!==id));
+      if(USE_CLOUD)sheetDelete(id).catch(e=>setCloudErr("Eroare ștergere: "+e.message));
+    }
+  };
+
+  // import
+  const handleFile=file=>{
+    if(!file)return;setImportErr("");setImportRows(null);
+    parseImport(file,r=>{if(!r.ok){setImportErr("Eroare: "+r.error);return;}if(!r.rows.length){setImportErr("Nu s-au găsit date.");return;}setImportRows(r.rows);});
+  };
+  const toggleRow=i=>setImportRows(p=>p.map((r,j)=>j===i?{...r,selected:!r.selected}:r));
+  const toggleAll=v=>setImportRows(p=>p.map(r=>r.errors.length===0?{...r,selected:v}:r));
+  const doImport=()=>{
+    const add=importRows.filter(r=>r.selected&&r.errors.length===0);
+    const newTxs=add.map(r=>({id:Date.now()+Math.random(),type:r.type,symbol:r.sym,shares:r.shares,price:r.price,date:r.date,broker:r.broker,notes:r.notes}));
+    setTxs(p=>[...p,...newTxs]);
+    if(USE_CLOUD)sheetAddBulk(newTxs).catch(e=>setCloudErr("Eroare import cloud: "+e.message));
+    setShowImport(false);setImportRows(null);
+  };
+
+  const selRows=importRows?importRows.filter(r=>r.selected):[];
+  const okRows=importRows?importRows.filter(r=>r.errors.length===0):[];
+
+  const COLORS=["#1D4ED8","#059669","#D97706","#7C3AED","#DC2626","#0891B2","#9333EA","#0F766E"];
+  const BROKER_PALETTE=["#F59E0B","#3B82F6","#059669","#7C3AED","#DC2626","#0891B2","#EA580C","#0F766E"];
+  const BROKER_COLORS=useMemo(()=>{
+    const m={TOTAL:"#6B7280"};
+    brokers.forEach((b,i)=>m[b]=BROKER_PALETTE[i%BROKER_PALETTE.length]);
+    return m;
+  },[brokers]);
+
+  // ── RENDER ────────────────────────────────────────────────
+  return(
+  <div style={{minHeight:"100vh",background:"var(--bg)"}}>
+
+  {/* HEADER */}
+  <header>
+    <div className="logo">
+      <div className="logo-icon">📈</div>
+      <div><div className="logo-text">Portfolio Tracker</div><div className="logo-sub">BURSA · LIVE</div></div>
+    </div>
+    <div className="hdr-right">
+      {USE_CLOUD
+        ?<span style={{fontSize:11,fontFamily:"IBM Plex Mono",padding:"3px 8px",borderRadius:5,background:cloudLoading?"#FEF3C7":cloudErr?"var(--red-bg)":"var(--green-bg)",color:cloudLoading?"#92400E":cloudErr?"var(--red)":"var(--green)",border:`1px solid ${cloudLoading?"#FDE68A":cloudErr?"var(--red-b)":"var(--green-b)"}`}} className="hide-sm">
+          {cloudLoading?"⏳ se încarcă...": cloudErr?"⚠ cloud err":"☁ Google Sheets"}
+        </span>
+        :<span style={{fontSize:11,color:"var(--text3)",fontFamily:"IBM Plex Mono",padding:"3px 8px",borderRadius:5,background:"var(--surface2)",border:"1px solid var(--border)"}} className="hide-sm">💾 local</span>
+      }
+      {updated&&<span style={{fontSize:11,color:"var(--text3)",fontFamily:"IBM Plex Mono"}} className="hide-sm">↻ {updated.toLocaleTimeString("ro-RO",{hour:"2-digit",minute:"2-digit"})}</span>}
+      <button className="btn btn-outline" onClick={fetchAll}>⟳</button>
+      {isAdmin&&<button className="btn btn-outline" onClick={()=>{setShowImport(true);setImportRows(null);setImportErr("");}}>⬆ Import</button>}
+      {isAdmin&&<button className="btn btn-outline" onClick={()=>setShowAdd(true)}>+ Tranzacție</button>}
+      {!isAdmin?<button className="btn btn-dark" onClick={()=>setShowPin(true)}>🔐 Edit</button>
+        :<button className="btn btn-outline" onClick={()=>setIsAdmin(false)} style={{color:"var(--red)"}}>Logout</button>}
+    </div>
+  </header>
+
+  {/* NAV */}
+  <nav style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+    {[["dashboard","📊","Dashboard"],["positions","💼","Poziții"],["transactions","📋","Tranzacții"],["club","🤝","Club"]].map(([t,icon,label])=>(
+      <div key={t} className={`ntab ${tab===t?"active":""}`} onClick={()=>setTab(t)}>
+        <span>{icon}</span><span className="nav-label"> {label}</span>
+      </div>
+    ))}
+    {!isAdmin&&<div className="viewonly">👁</div>}
+  </nav>
+
+  <main>
+
+  {/* ═══════ DASHBOARD ═══════ */}
+  {tab==="dashboard"&&<div className="fade-in">
+
+    {/* MARKET INDICES STRIP */}
+    <div style={{display:"flex",gap:8,marginBottom:14,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
+      {MARKET_SYMS.map(sym=>{
+        const d=marketData[sym];
+        const chg=d&&d.prev?((d.price-d.prev)/d.prev)*100:null;
+        return(
+          <div key={sym} className="card" style={{padding:"8px 12px",minWidth:110,flexShrink:0}}>
+            <div style={{fontSize:9,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:3}}>{MARKET_LABELS[sym]}</div>
+            <div className="mono" style={{fontSize:13,fontWeight:600,color:"var(--text)"}}>{d?new Intl.NumberFormat("ro-RO",{minimumFractionDigits:sym==="^VIX"||sym==="EURUSD=X"?2:0,maximumFractionDigits:2}).format(d.price):"—"}</div>
+            {chg!=null&&<div className="mono" style={{fontSize:10,color:chg>=0?"var(--green)":"var(--red)",marginTop:1}}>{chg>=0?"+":""}{chg.toFixed(2)}%</div>}
+          </div>
+        );
+      })}
+      {/* Fear & Greed */}
+      {fearGreed&&(()=>{
+        const v=fearGreed.value;
+        const fg_color=v<=25?"#DC2626":v<=45?"#F59E0B":v<=55?"#6B7280":v<=75?"#059669":"#047857";
+        return(
+          <div className="card" style={{padding:"8px 12px",minWidth:110,flexShrink:0,borderLeft:`3px solid ${fg_color}`}}>
+            <div style={{fontSize:9,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:3}}>Fear & Greed</div>
+            <div className="mono" style={{fontSize:16,fontWeight:700,color:fg_color}}>{v}</div>
+            <div style={{fontSize:9,color:fg_color,fontWeight:600,marginTop:1}}>{fearGreed.label}</div>
+          </div>
+        );
+      })()}
+      {/* USD/RON */}
+      {usdRon&&(
+        <div className="card" style={{padding:"8px 12px",minWidth:110,flexShrink:0,borderLeft:"3px solid var(--blue)"}}>
+          <div style={{fontSize:9,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:3}}>USD/RON</div>
+          <div className="mono" style={{fontSize:13,fontWeight:600,color:"var(--blue)"}}>{usdRon.toFixed(4)}</div>
+        </div>
+      )}
+    </div>
+
+    {/* 5 stat cards */}
+    <div className="cards-grid">
+      <div className="card stat-card">
+        <div className="stat-label">Valoare Totală</div>
+        <div className="stat-value mono">{fmtC(totalPortfolio)}</div>
+        <div className="stat-sub">{positions.length} poziții active</div>
+      </div>
+      <div className="card stat-card">
+        <div className="stat-label">Cost Investit</div>
+        <div className="stat-value mono">{fmtC(totalCostBasis)}</div>
+        <div className="stat-sub">{txs.filter(t=>t.type!=="DEPOSIT").length} tranzacții</div>
+      </div>
+      <div className="card stat-card card-accent-green">
+        <div className="stat-label">Profit Nerealizat</div>
+        <div className={`stat-value mono ${cls(totalUnrealized)}`}>{fmtC(totalUnrealized)}</div>
+        <div className={`stat-sub mono ${cls(uPct)}`}>{fmtPct(uPct)}</div>
+      </div>
+      <div className="card stat-card card-accent-purple">
+        <div className="stat-label">Profit Realizat</div>
+        <div className={`stat-value mono ${cls(totalRealized)}`} style={{color:totalRealized>=0?"var(--purple)":"var(--red)"}}>{fmtC(totalRealized)}</div>
+        <div className="stat-sub mono" style={{color:"var(--purple)"}}>{fmtPct(rPct)}</div>
+      </div>
+      <div className="card stat-card card-accent-blue">
+        <div className="stat-label">💵 Cash Total</div>
+        <div className="stat-value mono b">{fmtC(cashTotal)}</div>
+        <div className="stat-sub mono b">{fmtPct(cashPct)} din portofoli</div>
+      </div>
+    </div>
+
+    {/* Allocation compact + SP500 chart row */}
+    {positions.length>0&&(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:0}}>
+      {/* Compact alloc */}
+      <div className="card" style={{padding:"14px 16px"}}>
+        <div className="section-hdr" style={{marginBottom:10,fontSize:10}}>Alocare Portofoliu</div>
+        {(()=>{
+          const sorted=[...positions].sort((a,b)=>(b.curValue||0)-(a.curValue||0));
+          const maxPct=sorted.length>0&&totalPortfolio>0?((sorted[0].curValue||0)/totalPortfolio)*100:100;
+          return sorted.map((p,i)=>{
+            const s=totalPortfolio>0&&p.curValue?(p.curValue/totalPortfolio)*100:0;
+            const barW=maxPct>0?(s/maxPct)*60:0; // max 60% of container width
+            return(
+              <div key={p.broker+p.symbol} style={{display:"grid",gridTemplateColumns:"56px 1fr 38px",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:11,fontWeight:600}}>{p.symbol}</span>
+                <div style={{height:5,background:"var(--bg)",borderRadius:3,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${barW}%`,background:COLORS[i%COLORS.length],borderRadius:3,transition:"width .8s"}}/>
+                </div>
+                <span style={{fontSize:10,fontFamily:"IBM Plex Mono",color:"var(--text3)",textAlign:"right"}}>{s.toFixed(1)}%</span>
+              </div>
+            );
+          });
+        })()}
+        {cashTotal>0&&(
+          <div style={{display:"grid",gridTemplateColumns:"56px 1fr 38px",alignItems:"center",gap:8,marginTop:4,paddingTop:6,borderTop:"1px solid var(--border)"}}>
+            <span style={{fontSize:11,fontWeight:600,color:"var(--blue)"}}>Cash</span>
+            <div style={{height:4,background:"var(--bg)",borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",width:`${cashPct}%`,background:"var(--blue)",borderRadius:2}}/></div>
+            <span style={{fontSize:10,fontFamily:"IBM Plex Mono",color:"var(--blue)",textAlign:"right"}}>{cashPct.toFixed(1)}%</span>
+          </div>
+        )}
+      </div>
+
+      {/* SP500 vs Portfolio historical line chart */}
+      <div className="card" style={{padding:"14px 16px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6}}>
+          <div className="section-hdr" style={{marginBottom:0,fontSize:10}}>Portofoli vs S&P 500</div>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}><span style={{width:16,height:2,background:"#1D4ED8",display:"inline-block",borderRadius:1}}/><span style={{color:"var(--text3)"}}>Portofoli</span></span>
+            <span style={{display:"flex",alignItems:"center",gap:4,fontSize:11}}><span style={{width:16,height:2,background:"#059669",display:"inline-block",borderRadius:1}}/><span style={{color:"var(--text3)"}}>S&P 500</span></span>
+            {spHistory.loading&&<span style={{fontSize:10,color:"var(--text3)"}}>se încarcă...</span>}
+          </div>
+        </div>
+        <HistoryChart spHistory={spHistory} txs={txs} prices={prices}/>
+      </div>
+    </div>
+    )}
+
+    {positions.length===0&&(
+      <div className="card" style={{padding:60,textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>📊</div>
+        <div style={{fontWeight:600,fontSize:16,marginBottom:6}}>Nicio poziție</div>
+        <div style={{color:"var(--text3)",fontSize:13}}>{isAdmin?"Adaugă o tranzacție sau importă din Excel.":"Nu există tranzacții înregistrate."}</div>
+      </div>
+    )}
+  </div>}
+
+  {/* ═══════ POZIȚII ═══════ */}
+  {tab==="positions"&&<div className="fade-in">
+    {/* Broker tabs */}
+    <div className="broker-tabs">
+      {[...brokers,"TOTAL"].map(b=>{
+        const disp=b==="TOTAL"?positions:positions.filter(p=>p.broker===b);
+        const bVal=disp.reduce((s,p)=>s+(p.curValue||0),0);
+        const bCost=disp.reduce((s,p)=>s+p.costBasis,0);
+        const bRoi=bCost>0?((bVal-bCost)/bCost)*100:null;
+        const isActive=activeBroker===b;
+        return(
+          <div key={b} className={`btab ${isActive?"active":""}`} onClick={()=>setBrokerTab(b)}>
+            <span className="bdot" style={{background:BROKER_COLORS[b]||"#6B7280"}}/>
+            {b}
+            {bRoi!=null&&<span className="mono" style={{fontSize:11,marginLeft:3,fontWeight:700,color:isActive?(bRoi>=0?"#6EE7B7":"#FCA5A5"):(bRoi>=0?"var(--green)":"var(--red)")}}>
+              {bRoi>=0?"+":""}{bRoi.toFixed(1)}%
+            </span>}
+          </div>
+        );
+      })}
+      {isAdmin&&<div className="btab" onClick={()=>setShowBrokerMgr(true)} style={{opacity:.6}}>⚙</div>}
+    </div>
+
+    {/* Cash row */}
+    <div className="cash-row">
+      <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <span className="cash-label">💵 Cash {brokerTab==="TOTAL"?"Total":brokerTab}</span>
+        <span style={{fontSize:11,color:"var(--text3)"}}>se actualizează automat din BUY/SELL/DEPOSIT</span>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <span className="cash-val">{fmtC(displayCash)}</span>
+        <span className="cash-pct">{totalPortfolio>0?((displayCash/totalPortfolio)*100).toFixed(1):0}% portofoli</span>
+        {isAdmin&&<button className="cash-btn" onClick={()=>{setShowAdd(true);setForm(f=>({...f,type:"DEPOSIT",broker:brokerTab==="TOTAL"?"XTB":brokerTab}));}}>+ Depunere</button>}
+      </div>
+    </div>
+
+    {/* Ticker table */}
+    {filteredPos.length===0
+      ?<div className="card" style={{padding:50,textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>💼</div><div style={{color:"var(--text3)"}}>Nicio poziție pentru {brokerTab}</div></div>
+      :<div className="ticker-table">
+        {/* header */}
+        <div className="t-row t-hdr">
+          <div className="t-hdr-col">Symbol / Nume</div>
+          <div className="t-hdr-col">Acțiuni · Preț mediu</div>
+          <div className="t-hdr-col">Preț curent · Δ azi</div>
+          <div className="t-hdr-col" style={{textAlign:"right"}}>Nerealizat</div>
+          <div className="t-hdr-col hide-md" style={{textAlign:"right"}}>Realizat</div>
+          <div className="t-hdr-col" style={{textAlign:"right"}}>Valoare</div>
+        </div>
+
+        {filteredPos.map(p=>(
+          <div key={p.broker+p.symbol} className="t-row">
+            <div style={{display:"flex",flexDirection:"column",gap:1}}>
+              <span className="sym-main">{p.symbol}</span>
+              <span className="sym-name">{p.name}{brokerTab==="TOTAL"&&<span style={{marginLeft:5,fontSize:10,background:"var(--bg)",padding:"1px 5px",borderRadius:3,color:"var(--text3)",border:"1px solid var(--border)"}}>{p.broker}</span>}</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:1}}>
+              <span className="col2">{p.shares.toFixed(4)}</span>
+              <span className="col2-sub">avg {fmtC(p.avgPrice,p.currency)}</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:1}}>
+              <span className="col2">{p.curPrice?fmtC(p.curPrice,p.currency):loadingSyms[p.symbol]?"...":"—"}</span>
+              <span className={`col2-sub ${cls(p.dayChange)}`}>{p.dayChange!=null?fmtPct(p.dayChange):"—"}</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:1,alignItems:"flex-end"}}>
+              <span className={`pnl ${cls(p.unrealizedPnl)}`}>{p.unrealizedPnl!=null?fmtC(p.unrealizedPnl,p.currency):"—"}</span>
+              <span className={`pnl-sub ${cls(p.unrealizedPct)}`}>{p.unrealizedPct!=null?fmtPct(p.unrealizedPct):"—"}</span>
+            </div>
+            <div className="hide-md" style={{display:"flex",flexDirection:"column",gap:1,alignItems:"flex-end"}}>
+              <span className="pnl" style={{color:p.realizedPnl!==0?p.realizedPnl>0?"var(--purple)":"var(--red)":"var(--text3)"}}>{p.realizedPnl!==0?fmtC(p.realizedPnl,p.currency):"—"}</span>
+              <span className="pnl-sub" style={{color:p.realizedPnl!==0?"var(--purple)":"var(--text3)"}}>{p.realizedPnl!==0?fmtPct(p.realizedPct):"—"}</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:1,alignItems:"flex-end"}}>
+              <span className="val-main">{p.curValue?fmtC(p.curValue,p.currency):"—"}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* totals */}
+        {(()=>{const a=aggr(filteredPos);return(
+          <div className="t-row t-total">
+            <div style={{fontWeight:600,fontSize:12,color:"var(--text2)"}}>TOTAL {brokerTab}</div>
+            <div/>
+            <div/>
+            <div style={{display:"flex",flexDirection:"column",gap:1,alignItems:"flex-end"}}>
+              <span className={`pnl ${cls(a.totalUnrealized)}`}>{fmtC(a.totalUnrealized)}</span>
+              <span className={`pnl-sub ${cls(a.uPct)}`}>{fmtPct(a.uPct)}</span>
+            </div>
+            <div className="hide-md" style={{display:"flex",flexDirection:"column",gap:1,alignItems:"flex-end"}}>
+              <span className="pnl" style={{color:"var(--purple)"}}>{fmtC(a.totalRealized)}</span>
+              <span className="pnl-sub" style={{color:"var(--purple)"}}>{fmtPct(a.rPct)}</span>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <span className="val-main">{fmtC(a.totalCurValue)}</span>
+            </div>
+          </div>
+        );})()}
+      </div>
+    }
+  </div>}
+
+  {/* ═══════ TRANZACȚII ═══════ */}
+  {tab==="transactions"&&<div className="fade-in">
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
+      <span style={{color:"var(--text3)",fontSize:13}}>{txs.length} înregistrări</span>
+      {isAdmin&&<div style={{display:"flex",gap:8}}>
+        <button className="btn btn-outline" onClick={()=>{setShowImport(true);setImportRows(null);setImportErr("");}}>⬆ Import Excel</button>
+        <button className="btn btn-dark" onClick={()=>setShowAdd(true)}>+ Adaugă</button>
+      </div>}
+    </div>
+    {txs.length===0
+      ?<div className="card" style={{padding:50,textAlign:"center"}}><div style={{fontSize:36,marginBottom:10}}>📋</div><div style={{color:"var(--text3)"}}>Nicio tranzacție</div></div>
+      :<div className="card" style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr style={{borderBottom:"2px solid var(--border2)"}}>
+            {["Data","Broker","Tip","Symbol","Acțiuni","Preț","Total","Note",isAdmin?"":""].map((h,i)=>(
+              <th key={i} style={{padding:"10px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px"}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {[...txs].reverse().map(tx=>(
+              <tr key={tx.id} style={{borderBottom:"1px solid var(--border)"}} className="row-tx">
+                <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:12,color:"var(--text2)"}}>{tx.date}</td>
+                <td style={{padding:"9px 14px"}}><span style={{fontSize:11,fontWeight:600,background:"var(--bg)",padding:"2px 7px",borderRadius:4,border:"1px solid var(--border2)",color:BROKER_COLORS[tx.broker]||"var(--text2)"}}>{tx.broker}</span></td>
+                <td style={{padding:"9px 14px"}}>
+                  {tx.type==="DEPOSIT"
+                    ?<span className="pill-dep">DEPUNERE</span>
+                    :tx.type==="BUY"?<span className="pill-up">▲ BUY</span>:<span className="pill-dn">▼ SELL</span>}
+                </td>
+                <td style={{padding:"9px 14px",fontWeight:600,fontSize:13}}>{tx.symbol||"—"}</td>
+                <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:12}}>{tx.type==="DEPOSIT"?"—":(+tx.shares).toFixed(4)}</td>
+                <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:12}}>{fmtC(tx.price)}</td>
+                <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:12,fontWeight:600}}>{tx.type==="DEPOSIT"?fmtC(tx.price):fmtC((+tx.shares)*(+tx.price))}</td>
+                <td style={{padding:"9px 14px",fontSize:12,color:"var(--text3)"}}>{tx.notes||"—"}</td>
+                {isAdmin&&<td style={{padding:"9px 14px"}}>
+                  <div style={{display:"flex",gap:5}}>
+                    <button className="btn btn-outline" style={{padding:"3px 8px",fontSize:11}} onClick={()=>openEditTx(tx)}>✏</button>
+                    <button className="btn btn-danger" style={{padding:"3px 8px",fontSize:11}} onClick={()=>delTx(tx.id)}>✕</button>
+                  </div>
+                </td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>}
+
+
+  {/* ═══════ CLUB ═══════ */}
+  {tab==="club"&&<div className="fade-in">
+
+    {/* Club header */}
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+      <div>
+        <div style={{fontWeight:600,fontSize:18,letterSpacing:"-.3px"}}>{club.name}</div>
+        <div style={{fontSize:12,color:"var(--text3)"}}>Total investit: <span className="mono" style={{fontWeight:600,color:"var(--text)"}}>{fmtC(clubTotalInvested)}</span></div>
+      </div>
+      {isAdmin&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <button className="btn btn-outline" onClick={()=>{setEditInvestor(null);setInvForm({name:"",color:CLUB_COLORS[club.investors.length%CLUB_COLORS.length]});setShowClubInvestor(true);}}>+ Investitor</button>
+        <button className="btn btn-outline" onClick={()=>{setEditContrib(null);setContribForm({investorId:club.investors[0]?.id||"",month:new Date().toISOString().slice(0,7),amount:""});setShowClubContrib(true);}}>+ Contribuție</button>
+      </div>}
+    </div>
+
+    {/* Valoare actuală portofoliu club */}
+    <div className="card" style={{padding:"14px 18px",marginBottom:14,background:"var(--blue-bg)",border:"1px solid var(--blue-b)"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontSize:10,fontWeight:600,color:"var(--blue)",textTransform:"uppercase",letterSpacing:".8px",marginBottom:4}}>Valoare Actuală Portofoliu Club</div>
+          <div className="mono" style={{fontSize:22,fontWeight:600,color:"var(--blue)"}}>{new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON",minimumFractionDigits:2}).format(clubDisplayValue)}</div>
+          {clubDisplayValue>0&&clubTotalInvested>0&&<div className={`mono ${(clubDisplayValue-clubTotalInvested)>=0?"g":"r"}`} style={{fontSize:13,marginTop:2}}>
+            {new Intl.NumberFormat("ro-RO",{style:"currency",currency:"RON",minimumFractionDigits:2}).format(clubDisplayValue-clubTotalInvested)} ({fmtPct((clubDisplayValue-clubTotalInvested)/clubTotalInvested*100)})
+          </div>}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end"}}>
+          {clubAutoValueRON&&<div style={{fontSize:11,color:"var(--blue)",background:"#DBEAFE",padding:"3px 8px",borderRadius:5,fontFamily:"IBM Plex Mono"}}>
+            Auto: {totalPortfolio.toFixed(0)} USD × {usdRon?.toFixed(4)} = {clubAutoValueRON.toFixed(2)} RON
+          </div>}
+          {isAdmin&&<div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input className="input mono" type="number" placeholder="Override manual RON..." value={clubTotalVal} onChange={e=>setClubTotalVal(e.target.value)} style={{width:180,fontSize:12}} onKeyDown={e=>e.key==="Enter"&&saveClubValue()}/>
+            <button className="btn btn-dark" onClick={saveClubValue} style={{padding:"6px 10px",fontSize:11}}>Set</button>
+            {club.totalValue>0&&<button className="btn btn-outline" onClick={()=>setClub(c=>({...c,totalValue:0}))} style={{padding:"6px 10px",fontSize:11}}>Auto</button>}
+          </div>}
+        </div>
+      </div>
+    </div>
+
+    {club.investors.length===0?(
+      <div className="card" style={{padding:60,textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>🤝</div>
+        <div style={{fontWeight:600,fontSize:16,marginBottom:6}}>Niciun investitor</div>
+        <div style={{color:"var(--text3)",fontSize:13}}>{isAdmin?"Adaugă investitori cu butonul de sus →":"Club gol."}</div>
+      </div>
+    ):(
+      <>
+        {/* PIE CHART SVG */}
+        {clubInvestorStats.filter(i=>i.invested>0).length>1&&(()=>{
+          const stats=clubInvestorStats.filter(i=>i.invested>0);
+          const total=stats.reduce((s,i)=>s+i.invested,0);
+          let cumAngle=0;
+          const slices=stats.map(inv=>{
+            const angle=(inv.invested/total)*360;
+            const startAngle=cumAngle;
+            cumAngle+=angle;
+            return{...inv,startAngle,angle};
+          });
+          const R=80, cx=100, cy=100;
+          const toRad=d=>d*Math.PI/180;
+          const arcPath=(start,angle)=>{
+            if(angle>=359.99)return `M${cx},${cy-R} A${R},${R},0,1,1,${cx-.001},${cy-R} Z`;
+            const x1=cx+R*Math.sin(toRad(start));
+            const y1=cy-R*Math.cos(toRad(start));
+            const x2=cx+R*Math.sin(toRad(start+angle));
+            const y2=cy-R*Math.cos(toRad(start+angle));
+            const lg=angle>180?1:0;
+            return `M${cx},${cy} L${x1},${y1} A${R},${R},0,${lg},1,${x2},${y2} Z`;
+          };
+          return(
+            <div className="card" style={{padding:18,marginBottom:14,display:"flex",alignItems:"center",gap:24,flexWrap:"wrap"}}>
+              <svg width={200} height={200} style={{flexShrink:0}}>
+                {slices.map((s,i)=><path key={i} d={arcPath(s.startAngle,s.angle)} fill={s.color} stroke="#fff" strokeWidth={2}/>)}
+              </svg>
+              <div style={{display:"flex",flexDirection:"column",gap:8,flex:1}}>
+                {stats.map(inv=>(
+                  <div key={inv.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:12,height:12,borderRadius:3,background:inv.color,flexShrink:0}}/>
+                    <span style={{fontWeight:600,fontSize:13,minWidth:80}}>{inv.name}</span>
+                    <div style={{flex:1,height:5,background:"var(--border)",borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${inv.stake}%`,background:inv.color,borderRadius:3}}/>
+                    </div>
+                    <span className="mono" style={{fontSize:12,color:"var(--text2)",minWidth:40,textAlign:"right"}}>{inv.stake.toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* INVESTORS TABLE */}
+        <div className="sec-hdr" style={{marginBottom:10}}>Investitori</div>
+        <div className="card" style={{marginBottom:14,overflow:"hidden"}}>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:520}}>
+              <thead><tr style={{background:"var(--surface2)",borderBottom:"2px solid var(--border2)"}}>
+                {["Investitor","Total Investit","Stake %","Valoare Actuală","Profit","ROI",isAdmin?"":""].map((h,i)=>(
+                  <th key={i} style={{padding:"9px 14px",textAlign:i>=2?"right":"left",fontSize:10,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px"}}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {clubInvestorStats.map(inv=>(
+                  <tr key={inv.id} style={{borderBottom:"1px solid var(--border)"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="var(--surface2)"}
+                    onMouseLeave={e=>e.currentTarget.style.background=""}>
+                    <td style={{padding:"10px 14px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:10,height:10,borderRadius:2,background:inv.color,flexShrink:0}}/>
+                        <span style={{fontWeight:600,fontSize:13}}>{inv.name}</span>
+                      </div>
+                    </td>
+                    <td style={{padding:"10px 14px",fontFamily:"IBM Plex Mono",fontSize:13,fontWeight:500}}>{fmtC(inv.invested)}</td>
+                    <td style={{padding:"10px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right"}}>{inv.stake.toFixed(2)}%</td>
+                    <td style={{padding:"10px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right",fontWeight:500}}>{club.totalValue>0?fmtC(inv.curVal):"—"}</td>
+                    <td style={{padding:"10px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right"}} className={club.totalValue>0?(inv.profit>=0?"g":"r"):"muted"}>{club.totalValue>0?fmtC(inv.profit):"—"}</td>
+                    <td style={{padding:"10px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right",fontWeight:600}} className={club.totalValue>0?(inv.roi>=0?"g":"r"):"muted"}>{club.totalValue>0?fmtPct(inv.roi):"—"}</td>
+                    {isAdmin&&<td style={{padding:"10px 14px"}}>
+                      <div style={{display:"flex",gap:6}}>
+                        <button className="btn btn-outline" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditInvestor(inv);setInvForm({name:inv.name,color:inv.color});setShowClubInvestor(true);}}>✏</button>
+                        <button className="btn btn-danger" style={{padding:"3px 8px",fontSize:11}} onClick={()=>delInvestor(inv.id)}>✕</button>
+                      </div>
+                    </td>}
+                  </tr>
+                ))}
+                <tr style={{background:"var(--surface2)",borderTop:"2px solid var(--border2)"}}>
+                  <td style={{padding:"9px 14px",fontWeight:600,fontSize:12}}>TOTAL</td>
+                  <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:13,fontWeight:600}}>{fmtC(clubTotalInvested)}</td>
+                  <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:12,textAlign:"right",color:"var(--text3)"}}>100%</td>
+                  <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right",fontWeight:600}}>{club.totalValue>0?fmtC(club.totalValue):"—"}</td>
+                  <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right",fontWeight:600}} className={club.totalValue>0&&(club.totalValue-clubTotalInvested)>=0?"g":"r"}>{club.totalValue>0?fmtC(club.totalValue-clubTotalInvested):"—"}</td>
+                  <td style={{padding:"9px 14px",fontFamily:"IBM Plex Mono",fontSize:13,textAlign:"right",fontWeight:600}} className={club.totalValue>0&&clubTotalInvested>0&&(club.totalValue-clubTotalInvested)>=0?"g":"r"}>{club.totalValue>0&&clubTotalInvested>0?fmtPct((club.totalValue-clubTotalInvested)/clubTotalInvested*100):"—"}</td>
+                  {isAdmin&&<td/>}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* CONTRIBUTIONS TABLE */}
+        {club.contributions.length>0&&<>
+          <div className="sec-hdr" style={{marginBottom:10}}>Contribuții Lunare</div>
+          <div className="card" style={{overflow:"hidden"}}>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",minWidth:400}}>
+                <thead><tr style={{background:"var(--surface2)",borderBottom:"2px solid var(--border2)"}}>
+                  <th style={{padding:"9px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px"}}>Lună</th>
+                  {club.investors.map(inv=>(
+                    <th key={inv.id} style={{padding:"9px 14px",textAlign:"right",fontSize:10,fontWeight:600,color:inv.color,textTransform:"uppercase",letterSpacing:".6px"}}>{inv.name}</th>
+                  ))}
+                  <th style={{padding:"9px 14px",textAlign:"right",fontSize:10,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".6px"}}>Total</th>
+                  {isAdmin&&<th/>}
+                </tr></thead>
+                <tbody>
+                  {clubMonths.map(month=>{
+                    const monthTotal=club.investors.reduce((s,inv)=>{
+                      const c=club.contributions.find(x=>x.investorId===inv.id&&x.month===month);
+                      return s+(c?c.amount:0);
+                    },0);
+                    return(
+                      <tr key={month} style={{borderBottom:"1px solid var(--border)"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="var(--surface2)"}
+                        onMouseLeave={e=>e.currentTarget.style.background=""}>
+                        <td style={{padding:"9px 14px",fontWeight:600,fontSize:13,fontFamily:"IBM Plex Mono"}}>{month}</td>
+                        {club.investors.map(inv=>{
+                          const c=club.contributions.find(x=>x.investorId===inv.id&&x.month===month);
+                          return(
+                            <td key={inv.id} style={{padding:"9px 14px",textAlign:"right",fontFamily:"IBM Plex Mono",fontSize:13}}>
+                              {c?<span style={{color:inv.color,fontWeight:500}}>{fmtC(c.amount)}</span>:<span style={{color:"var(--text3)"}}>—</span>}
+                            </td>
+                          );
+                        })}
+                        <td style={{padding:"9px 14px",textAlign:"right",fontFamily:"IBM Plex Mono",fontSize:13,fontWeight:600}}>{fmtC(monthTotal)}</td>
+                        {isAdmin&&<td style={{padding:"9px 14px"}}>
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                            {club.investors.map(inv=>{
+                              const c=club.contributions.find(x=>x.investorId===inv.id&&x.month===month);
+                              return c?(
+                                <button key={inv.id} className="btn btn-outline" style={{padding:"2px 6px",fontSize:10,color:inv.color,borderColor:inv.color}} onClick={()=>{setEditContrib(c);setContribForm({investorId:c.investorId,month:c.month,amount:String(c.amount)});setShowClubContrib(true);}}>
+                                  ✏ {inv.name}
+                                </button>
+                              ):null;
+                            })}
+                            <button className="btn btn-outline" style={{padding:"2px 6px",fontSize:10}} onClick={()=>{setEditContrib(null);setContribForm({investorId:club.investors[0]?.id||"",month,amount:""});setShowClubContrib(true);}}>+ Add</button>
+                          </div>
+                        </td>}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>}
+      </>
+    )}
+  </div>}
+
+  </main>
+
+  {/* ══ CLUB: ADD/EDIT INVESTOR MODAL ══ */}
+  {showClubInvestor&&isAdmin&&(
+    <div className="overlay" onClick={()=>setShowClubInvestor(false)}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+        <div className="modal-title">{editInvestor?"✏ Editează Investitor":"+ Investitor Nou"}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div><div className="label">Nume</div>
+            <input className="input" placeholder="ex: Andrei" value={invForm.name} onChange={e=>setInvForm(f=>({...f,name:e.target.value}))} autoFocus/>
+          </div>
+          <div><div className="label">Culoare</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {CLUB_COLORS.map(c=>(
+                <div key={c} onClick={()=>setInvForm(f=>({...f,color:c}))} style={{width:28,height:28,borderRadius:6,background:c,cursor:"pointer",border:invForm.color===c?"3px solid var(--text)":"2px solid transparent",transition:"border .1s"}}/>
+              ))}
+            </div>
+          </div>
+          {invErr&&<div style={{color:"var(--red)",fontSize:12}}>{invErr}</div>}
+          <div className="modal-footer">
+            <button className="btn btn-outline" style={{flex:1}} onClick={()=>setShowClubInvestor(false)}>Anulează</button>
+            <button className="btn btn-dark" style={{flex:1}} onClick={addInvestor}>Salvează</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ══ CLUB: ADD/EDIT CONTRIBUTION MODAL ══ */}
+  {showClubContrib&&isAdmin&&(
+    <div className="overlay" onClick={()=>setShowClubContrib(false)}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+        <div className="modal-title">{editContrib?"✏ Editează Contribuție":"+ Contribuție Nouă"}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div><div className="label">Investitor</div>
+            <select className="select" value={contribForm.investorId} onChange={e=>setContribForm(f=>({...f,investorId:+e.target.value}))}>
+              <option value="">Selectează...</option>
+              {club.investors.map(inv=><option key={inv.id} value={inv.id}>{inv.name}</option>)}
+            </select>
+          </div>
+          <div className="form-grid">
+            <div><div className="label">Lună</div>
+              <input className="input" type="month" value={contribForm.month} onChange={e=>setContribForm(f=>({...f,month:e.target.value}))}/>
+            </div>
+            <div><div className="label">Sumă</div>
+              <input className="input mono" type="number" placeholder="500" min="0" step="any" value={contribForm.amount} onChange={e=>setContribForm(f=>({...f,amount:e.target.value}))}/>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-outline" style={{flex:1}} onClick={()=>setShowClubContrib(false)}>Anulează</button>
+            <button className="btn btn-dark" style={{flex:1}} onClick={addContrib}>Salvează</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ══ BROKER MANAGER MODAL ══ */}
+  {showBrokerMgr&&isAdmin&&(
+    <div className="overlay" onClick={()=>setShowBrokerMgr(false)}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:360}}>
+        <div className="modal-title">⚙ Gestionare Brokeri</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+          {brokers.map(b=>(
+            <div key={b} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",background:"var(--surface2)",borderRadius:8,border:"1px solid var(--border)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{width:10,height:10,borderRadius:"50%",background:BROKER_COLORS[b]||"#6B7280",display:"inline-block"}}/>
+                <span style={{fontWeight:600,fontSize:13}}>{b}</span>
+              </div>
+              <button className="btn btn-danger" style={{padding:"3px 8px",fontSize:11}} onClick={()=>delBroker(b)}>✕</button>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input className="input" placeholder="Nume broker nou (ex: ETORO)" value={newBrokerName} onChange={e=>setNewBrokerName(e.target.value.toUpperCase())} onKeyDown={e=>e.key==="Enter"&&addBroker()} style={{flex:1,fontSize:13}}/>
+          <button className="btn btn-dark" onClick={addBroker}>+ Adaugă</button>
+        </div>
+        <div className="modal-footer" style={{marginTop:14}}>
+          <button className="btn btn-outline" style={{flex:1}} onClick={()=>setShowBrokerMgr(false)}>Închide</button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ══ PIN MODAL ══ */}
+  {showPin&&(
+    <div className="overlay" onClick={()=>setShowPin(false)}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:360}}>
+        <div className="modal-title">🔐 Mod Editare</div>
+        <div style={{color:"var(--text3)",fontSize:13,marginBottom:16}}>Introdu PIN-ul pentru a edita portfoliul</div>
+        <input className="input mono" type="password" placeholder="PIN" value={pin} onChange={e=>{setPin(e.target.value);setPinErr(false);}} onKeyDown={e=>e.key==="Enter"&&doPin()} autoFocus style={{fontSize:20,letterSpacing:8,textAlign:"center"}}/>
+        {pinErr&&<div style={{color:"var(--red)",fontSize:12,marginTop:8,textAlign:"center"}}>PIN incorect.</div>}
+        <div className="modal-footer">
+          <button className="btn btn-outline" onClick={()=>setShowPin(false)} style={{flex:1}}>Anulează</button>
+          <button className="btn btn-dark" onClick={doPin} style={{flex:1}}>Intră</button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ══ ADD MODAL ══ */}
+  {showAdd&&isAdmin&&(
+    <div className="overlay" onClick={()=>setShowAdd(false)}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-title">
+          {editTx?"✏ Editează Tranzacție":form.type==="DEPOSIT"?"💵 Depunere Nouă":form.type==="BUY"?"▲ Cumpărare":"▼ Vânzare"}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:13}}>
+          {/* Tip */}
+          <div><div className="label">Tip Tranzacție</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+              {["BUY","SELL","DEPOSIT"].map(t=>(
+                <button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"8px",borderRadius:7,border:`2px solid ${form.type===t?"var(--text)":"var(--border2)"}`,background:form.type===t?"var(--text)":"var(--surface)",color:form.type===t?"#fff":"var(--text2)",fontFamily:"IBM Plex Sans",fontWeight:600,fontSize:12,cursor:"pointer"}}>
+                  {t==="BUY"?"▲ BUY":t==="SELL"?"▼ SELL":"💵 DEPUNERE"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-grid">
+            <div><div className="label">Broker</div>
+              <select className="select" value={form.broker} onChange={e=>setForm(f=>({...f,broker:e.target.value}))}>
+                {brokers.map(b=><option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+            <div><div className="label">Data</div><input className="input" type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
+          </div>
+          {form.type==="DEPOSIT"
+            ?<div><div className="label">Sumă Depusă</div><input className="input mono" type="number" placeholder="5000.00" min="0" step="any" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/></div>
+            :<>
+              <div><div className="label">Symbol (ex: AAPL, TLV.RO)</div><input className="input" placeholder="AAPL" value={form.symbol} onChange={e=>setForm(f=>({...f,symbol:e.target.value.toUpperCase()}))}/></div>
+              <div className="form-grid">
+                <div><div className="label">Nr. Acțiuni</div><input className="input mono" type="number" placeholder="10" min="0" step="any" value={form.shares} onChange={e=>setForm(f=>({...f,shares:e.target.value}))}/></div>
+                <div><div className="label">Preț / Acțiune</div><input className="input mono" type="number" placeholder="150.00" min="0" step="any" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/></div>
+              </div>
+              {form.shares&&form.price&&!isNaN(+form.shares)&&!isNaN(+form.price)&&(
+                <div className="form-total">Total: <strong>{fmtC(+form.shares*+form.price)}</strong></div>
+              )}
+            </>
+          }
+          <div><div className="label">Note (opțional)</div><input className="input" placeholder="ex: DCA lunar" value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
+          {formErr&&<div style={{color:"var(--red)",fontSize:12}}>{formErr}</div>}
+          <div className="modal-footer">
+            <button className="btn btn-outline" onClick={()=>{setShowAdd(false);setFormErr("");}} style={{flex:1}}>Anulează</button>
+            <button className="btn btn-dark" onClick={addTx} style={{flex:1}}>Salvează</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* ══ IMPORT MODAL ══ */}
+  {showImport&&isAdmin&&(
+    <div className="overlay" onClick={()=>{setShowImport(false);setImportRows(null);}}>
+      <div className="modal modal-wide" onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div className="modal-title" style={{margin:0}}>⬆ Import Excel / CSV</div>
+          <button className="btn btn-ghost" onClick={()=>{setShowImport(false);setImportRows(null);}}>✕</button>
+        </div>
+
+        {!importRows&&<>
+          <div className={`dropzone ${drag?"drag":""}`} onClick={()=>fileRef.current.click()}
+            onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)}
+            onDrop={e=>{e.preventDefault();setDrag(false);handleFile(e.dataTransfer.files[0]);}}>
+            <div style={{fontSize:32,marginBottom:10}}>📂</div>
+            <div style={{fontWeight:600,fontSize:15,marginBottom:5}}>Trage fișierul sau click să selectezi</div>
+            <div style={{color:"var(--text3)",fontSize:12}}>Acceptă .xlsx, .xls, .csv</div>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])}/>
+          </div>
+          {importErr&&<div style={{color:"var(--red)",fontSize:12,marginTop:10,padding:"8px 12px",background:"var(--red-bg)",borderRadius:7}}>{importErr}</div>}
+          <div style={{marginTop:14,padding:"14px 16px",background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:10}}>
+            <div style={{fontWeight:600,fontSize:13,marginBottom:4}}>Nu ai un fișier? Descarcă template-ul:</div>
+            <div style={{color:"var(--text3)",fontSize:12,marginBottom:10}}>Include coloane corecte + câmp Broker (XTB/IBKR) + tip DEPOSIT</div>
+            <button className="btn btn-outline" onClick={dlTemplate}>⬇ portfolio_template.xlsx</button>
+          </div>
+        </>}
+
+        {importRows&&<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+            <div>
+              <span style={{fontWeight:600,fontSize:14}}>{importRows.length} rânduri detectate</span>
+              <span style={{fontSize:12,color:"var(--text3)",marginLeft:10}}>{okRows.length} valide · {importRows.length-okRows.length} erori</span>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <button className="btn btn-ghost" style={{fontSize:11}} onClick={()=>toggleAll(true)}>Selectează tot</button>
+              <button className="btn btn-ghost" style={{fontSize:11}} onClick={()=>toggleAll(false)}>Deselectează</button>
+            </div>
+          </div>
+          <div style={{overflowX:"auto",maxHeight:340,overflowY:"auto",borderRadius:8,border:"1px solid var(--border)"}}>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead style={{position:"sticky",top:0,background:"var(--surface2)",zIndex:2}}>
+                <tr><th style={{padding:"8px 12px",fontSize:10,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".5px",textAlign:"left",width:32}}>✓</th>
+                  {["Symbol","Data","Acțiuni","Preț","Tip","Broker","Status"].map(h=>(
+                    <th key={h} style={{padding:"8px 12px",fontSize:10,fontWeight:600,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".5px",textAlign:"left"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {importRows.map((r,i)=>(
+                  <tr key={i} className={r.errors.length===0?"prev-ok":"prev-err"} style={{borderBottom:"1px solid var(--border)"}}>
+                    <td style={{padding:"7px 12px"}}><input type="checkbox" className="cb" checked={r.selected} disabled={r.errors.length>0} onChange={()=>toggleRow(i)}/></td>
+                    <td style={{padding:"7px 12px",fontWeight:600,fontSize:12}}>{r.sym||"—"}</td>
+                    <td style={{padding:"7px 12px",fontFamily:"IBM Plex Mono",fontSize:11}}>{r.date||"—"}</td>
+                    <td style={{padding:"7px 12px",fontFamily:"IBM Plex Mono",fontSize:11}}>{r.type==="DEPOSIT"?"—":isNaN(r.shares)?"ERR":r.shares}</td>
+                    <td style={{padding:"7px 12px",fontFamily:"IBM Plex Mono",fontSize:11}}>{isNaN(r.price)?"ERR":r.price}</td>
+                    <td style={{padding:"7px 12px"}}>
+                      {r.type==="DEPOSIT"?<span className="pill-dep">DEPOSIT</span>:r.type==="BUY"?<span className="pill-up">▲ BUY</span>:<span className="pill-dn">▼ SELL</span>}
+                    </td>
+                    <td style={{padding:"7px 12px",fontSize:11,fontWeight:600,color:BROKER_COLORS[r.broker]||"var(--text2)"}}>{r.broker}</td>
+                    <td style={{padding:"7px 12px",fontSize:11}}>
+                      {r.errors.length===0?<span style={{color:"var(--green)"}}>✓ OK</span>:<span style={{color:"var(--red)"}}>⚠ {r.errors.join(", ")}</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:14,flexWrap:"wrap",gap:10}}>
+            <span style={{fontSize:13,color:"var(--text2)"}}><strong>{selRows.length}</strong> tranzacții selectate</span>
+            <div style={{display:"flex",gap:8}}>
+              <button className="btn btn-outline" onClick={()=>setImportRows(null)}>← Înapoi</button>
+              <button className="btn btn-green" onClick={doImport} disabled={selRows.length===0} style={{opacity:selRows.length===0?.5:1}}>
+                Importă {selRows.length>0?`(${selRows.length})`:""}
+              </button>
+            </div>
+          </div>
+        </>}
+      </div>
+    </div>
+  )}
+
+  </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
